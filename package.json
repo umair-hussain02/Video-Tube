@@ -1,24 +1,25 @@
 {
-  "name": "video-tube",
-  "version": "1.0.0",
-  "description": "A backend project for Video base app",
-  "type": "module",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon src/index.js"
-  },
-  "keywords": [
-    "backend",
-    "express"
-  ],
-  "author": "Umair Hussain",
-  "license": "ISC",
-  "dependencies": {
-    "dotenv": "^16.4.5",
-    "express": "^4.21.0"
-  },
-  "devDependencies": {
-    "prettier": "^3.3.3"
-  }
+    "name": "video-tube",
+    "version": "1.0.0",
+    "description": "A backend project for Video base app",
+    "type": "module",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "dev": "nodemon src/index.js"
+    },
+    "keywords": [
+        "backend",
+        "express"
+    ],
+    "author": "Umair Hussain",
+    "license": "ISC",
+    "dependencies": {
+        "dotenv": "^16.4.5",
+        "express": "^4.21.0",
+        "mongoose": "^8.6.3"
+    },
+    "devDependencies": {
+        "prettier": "^3.3.3"
+    }
 }
