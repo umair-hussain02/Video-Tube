@@ -6,7 +6,10 @@ import { JSON_LIMIT } from "./constant.js";
 const app = express();
 
 app.use(
-    cors()
+    cors({
+        origin: "http://localhost:5173", // 👈 Your frontend's origin
+        credentials: true, // 👈 Allow cookies, auth headers, etc.
+    })
     //     {
     //     origin: process.env.CORS_ORIGIN,
     //     credentials: true,
