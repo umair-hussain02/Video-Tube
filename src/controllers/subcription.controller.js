@@ -62,7 +62,7 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(Number(limit))
-        .populate("subscriber", "username avatar");
+        .populate("subscriber", "userName avatar");
 
     const total = await Subscription.countDocuments({ channel: channelId });
 
@@ -98,7 +98,7 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(Number(limit))
-        .populate("channel", "username avatar");
+        .populate("channel", "userName avatar");
 
     const total = await Subscription.countDocuments({
         subscriber: subscriberId,

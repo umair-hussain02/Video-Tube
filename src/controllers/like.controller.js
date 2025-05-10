@@ -12,7 +12,7 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     }
 
     const existingLike = await Like.findOne({
-        user: req.user._id,
+        likedBy: req.user._id,
         video: videoId,
     });
 
@@ -22,9 +22,10 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
             .status(200)
             .json(new ApiResponse(200, null, "Video unliked successfully"));
     }
+    console.log();
 
     await Like.create({
-        user: req.user._id,
+        likedBy: req.user._id,
         video: videoId,
     });
 
@@ -41,8 +42,8 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
     }
 
     const existingLike = await Like.findOne({
-        user: req.user._id,
-        comment: commentId,
+        likedBy: req.user._id,
+        Comment: commentId,
     });
 
     if (existingLike) {
@@ -53,13 +54,15 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
     }
 
     await Like.create({
-        user: req.user._id,
-        comment: commentId,
+        likedBy: req.user._id,
+        Comment: commentId,
     });
 
     return res
         .status(201)
-        .json(new ApiResponse(201, null, "Comment liked successfully"));
+        .json(
+            new ApiResponse(201, req.user._idn, "Comment liked successfully")
+        );
 });
 
 const toggleTweetLike = asyncHandler(async (req, res) => {
@@ -70,7 +73,7 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
     }
 
     const existingLike = await Like.findOne({
-        user: req.user._id,
+        likedBy: req.user._id,
         tweet: tweetId,
     });
 
@@ -82,7 +85,7 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
     }
 
     await Like.create({
-        user: req.user._id,
+        likedBy: req.user._id,
         tweet: tweetId,
     });
 
@@ -95,16 +98,16 @@ const getLikedVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
 
     const likes = await Like.find({
-        user: req.user._id,
+        likedBy: req.user._id,
         video: { $exists: true },
     })
-        .populate("video", "title thumbnail createdAt") // assuming video model has these fields
+        .populate("video", "title thumbnail likedBy createdAt") // assuming video model has these fields
         .skip((page - 1) * limit)
         .limit(Number(limit))
         .sort({ createdAt: -1 });
 
     const total = await Like.countDocuments({
-        user: req.user._id,
+        likedBy: req.user._id,
         video: { $exists: true },
     });
 

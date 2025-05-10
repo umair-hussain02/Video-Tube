@@ -14,7 +14,7 @@ const createPlaylist = asyncHandler(async (req, res) => {
     const playlist = await Playlist.create({
         name,
         description,
-        user: req.user._id,
+        owner: req.user._id,
     });
 
     return res
@@ -30,12 +30,13 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid user ID");
     }
 
-    const playlists = await Playlist.find({ user: userId })
+    const playlists = await Playlist.find({ owner: userId })
+        .populate("videos", "thumbnail")
         .skip((page - 1) * limit)
         .limit(Number(limit))
         .sort({ createdAt: -1 });
 
-    const total = await Playlist.countDocuments({ user: userId });
+    const total = await Playlist.countDocuments({ owner: userId });
 
     return res
         .status(200)
@@ -56,8 +57,8 @@ const getPlaylistById = asyncHandler(async (req, res) => {
     }
 
     const playlist = await Playlist.findById(playlistId)
-        .populate("videos", "title thumbnail") // assuming videos have title, thumbnail
-        .populate("user", "username avatar");
+        .populate("videos") // assuming videos have title, thumbnail
+        .populate("owner", "userName avatar");
 
     if (!playlist) {
         throw new ApiError(404, "Playlist not found");
@@ -81,7 +82,7 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Playlist not found");
     }
 
-    if (playlist.user.toString() !== req.user._id.toString()) {
+    if (playlist.owner.toString() !== req.user._id.toString()) {
         throw new ApiError(
             403,
             "You are not authorized to modify this playlist"
@@ -119,7 +120,7 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Playlist not found");
     }
 
-    if (playlist.user.toString() !== req.user._id.toString()) {
+    if (playlist.owner.toString() !== req.user._id.toString()) {
         throw new ApiError(
             403,
             "You are not authorized to modify this playlist"
@@ -153,7 +154,7 @@ const deletePlaylist = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Playlist not found");
     }
 
-    if (playlist.user.toString() !== req.user._id.toString()) {
+    if (playlist.owner.toString() !== req.user._id.toString()) {
         throw new ApiError(
             403,
             "You are not authorized to delete this playlist"
@@ -180,8 +181,9 @@ const updatePlaylist = asyncHandler(async (req, res) => {
     if (!playlist) {
         throw new ApiError(404, "Playlist not found");
     }
+    console.log(playlist.owner);
 
-    if (playlist.user.toString() !== req.user._id.toString()) {
+    if (playlist.owner.toString() !== req.user._id.toString()) {
         throw new ApiError(
             403,
             "You are not authorized to update this playlist"

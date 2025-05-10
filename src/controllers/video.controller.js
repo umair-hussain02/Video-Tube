@@ -6,6 +6,8 @@ import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { getVideoDurationInSeconds } from "get-video-duration";
+import { Subscription } from "../models/subscription.model.js";
+import { Like } from "../models/likes.model.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
     const {
@@ -32,7 +34,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
         .sort(sortOption)
         .skip((page - 1) * limit)
         .limit(Number(limit))
-        .populate("creater", "username avatar");
+        .populate("creater", "userName avatar");
 
     const total = await Video.countDocuments(filter);
 
@@ -96,19 +98,42 @@ const getVideoById = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid video ID");
     }
 
-    const video = await Video.findById(videoId).populate(
-        "creater",
-        "username avatar"
-    );
+    const video = await Video.findByIdAndUpdate(
+        videoId,
+        { $inc: { views: 1 } }, // Increment views
+        { new: true } // Return updated document
+    ).populate("creater", "userName avatar");
 
-    if (!video) {
-        throw new ApiError(404, "Video not found");
-    }
+    const subscriberCount = await Subscription.countDocuments({
+        channel: video.creater._id,
+    });
+
+    const likes = await Like.countDocuments({ video: video._id });
+
+    const responseVideo = {
+        ...video.toObject(),
+        creater: {
+            ...video.creater.toObject(),
+            subscriberCount,
+        },
+        likes,
+    };
 
     return res
         .status(200)
-        .json(new ApiResponse(200, video, "Video fetched successfully"));
+        .json(
+            new ApiResponse(200, responseVideo, "Video fetched successfully")
+        );
 });
+
+//     if (!video) {
+//         throw new ApiError(404, "Video not found");
+//     }
+
+//     return res
+//         .status(200)
+//         .json(new ApiResponse(200, video, "Video fetched successfully"));
+// });
 
 const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params;

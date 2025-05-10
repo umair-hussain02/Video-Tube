@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 // -----------Cookies Option------------
 const option = {
@@ -352,12 +353,12 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     const channel = await User.aggregate([
         {
             $match: {
-                username: username?.toLowerCase(),
+                userName: username.toLowerCase(),
             },
         },
         {
             $lookup: {
-                from: "subscriptions",
+                from: "subcriptions",
                 localField: "_id",
                 foreignField: "channel",
                 as: "subscribers",
@@ -365,7 +366,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         },
         {
             $lookup: {
-                from: "subscriptions",
+                from: "subcriptions",
                 localField: "_id",
                 foreignField: "subscriber",
                 as: "subscribedTo",
@@ -373,19 +374,8 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         },
         {
             $addFields: {
-                subscribersCount: {
-                    $size: "$subscribers",
-                },
-                channelsSubscribedToCount: {
-                    $size: "$subscribedTo",
-                },
-                isSubscribed: {
-                    $cond: {
-                        if: { $in: [req.user?._id, "$subscribers.subscriber"] },
-                        then: true,
-                        else: false,
-                    },
-                },
+                subscribersCount: { $size: "$subscribers" },
+                channelsSubscribedToCount: { $size: "$subscribedTo" },
             },
         },
         {
@@ -394,10 +384,10 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
                 username: 1,
                 subscribersCount: 1,
                 channelsSubscribedToCount: 1,
-                isSubscribed: 1,
                 avatar: 1,
                 coverImage: 1,
                 email: 1,
+                subscribers: 1, // Keep for JS-based `isSubscribed` check
             },
         },
     ]);
@@ -415,6 +405,36 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
                 "User channel fetched successfully"
             )
         );
+});
+
+// update Watch History
+const addToWatchHistory = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const { videoId } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
+        return res.status(400).json({ message: "Invalid video ID" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Remove if already exists to move it to top
+    user.watchHistory = user.watchHistory.filter(
+        (id) => id.toString() !== videoId
+    );
+
+    // Add to front
+    user.watchHistory.unshift(videoId);
+
+    // Optional: limit history size to 100
+    if (user.watchHistory.length > 100) {
+        user.watchHistory = user.watchHistory.slice(0, 100);
+    }
+
+    await user.save();
+
+    res.status(200).json({ message: "Added to watch history" });
 });
 
 // Get Watch History
@@ -483,5 +503,6 @@ export {
     updateUserAvatar,
     updateUserCoverImage,
     getUserChannelProfile,
+    addToWatchHistory,
     getWatchHistory,
 };

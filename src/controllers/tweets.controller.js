@@ -5,6 +5,46 @@ import { ApiError } from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
+const getAllTweets = asyncHandler(async (req, res) => {
+    const {
+        page = 1,
+        limit = 10,
+        query = "",
+        sortBy = "createdAt",
+        sortType = "desc",
+        userId,
+    } = req.query;
+    const filter = {};
+
+    if (query) {
+        filter.title = { $regex: query, $options: "i" }; // case-insensitive search
+    }
+
+    if (userId && isValidObjectId(userId)) {
+        filter.owner = userId;
+    }
+
+    const sortOption = { [sortBy]: sortType === "asc" ? 1 : -1 };
+
+    const tweets = await Tweet.find(filter)
+        .sort(sortOption)
+        .skip((page - 1) * limit)
+        .limit(Number(limit))
+        .populate("owner", "userName avatar");
+
+    const total = await Tweet.countDocuments(filter);
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                { tweets, total, page: Number(page), limit: Number(limit) },
+                "Tweets fetched successfully"
+            )
+        );
+});
+
 const createTweet = asyncHandler(async (req, res) => {
     const { content } = req.body;
 
@@ -105,4 +145,4 @@ const deleteTweet = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, null, "Tweet deleted successfully"));
 });
 
-export { createTweet, getUserTweets, updateTweet, deleteTweet };
+export { getAllTweets, createTweet, getUserTweets, updateTweet, deleteTweet };
